@@ -52,4 +52,50 @@ router.get("/:id", async (req, res) => {
     return res.status(500).json(error);
   }
 });
+
+router.put("/:id/follow", async (req, res) => {
+  // check  if the user are same then error because user cannot follow himself
+  if (req.body.userId !== req.body.id) {
+    try {
+      const user = await User.findById(req.params.id);
+      const loggedInUser = await User.findById(req.body.userId);
+      //check  if loggedInUser ( who is open) is not already a follower of the user
+      if (!user.followers.includes(req.body.userId)) {
+        await user.updateOne({ $push: { followers: req.body.userId } });
+        await loggedInUser.updateOne({
+          $push: { following: req.params.userId },
+        });
+        res.status(200).json("success , user has been followed");
+      } else {
+        res.status(403).json("you are already a follower");
+      }
+    } catch (error) {
+      res.status(500).json(err);
+    }
+  } else {
+    res.status(403).json("can't follow yourself");
+  }
+});
+
+router.put("/:id/unfollow", async (req, res) => {
+  // check  if the user are same then error because user cannot follow himself
+  if (req.body.userId !== req.body.id) {
+    try {
+      const user = await User.findById(req.params.id);
+      const loggedInUser = await User.findById(req.body.userId);
+      //check  if loggedInUser ( who is open) is not already a follower of the user
+      if (user.followers.includes(req.body.userId)) {
+        await user.updateOne({ $pull: { followers: req.body.userId } });
+        await loggedInUser.updateOne({ $pull: { following: req.body.id } });
+        res.status(200).json("success , user has been unfollowed");
+      } else {
+        res.status(403).json("you are not a follower");
+      }
+    } catch (error) {
+      res.status(500).json(err);
+    }
+  } else {
+    res.status(403).json("can't unfollow yourself");
+  }
+});
 module.exports = router;
